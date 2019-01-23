@@ -60,11 +60,49 @@ impl Track {
         }
     }
 
+    fn calc_new_pos(&self, row: usize, dist: usize) -> (usize, usize) {
+        //down hill
+        println!("1-dist = {}", dist);
+        let dist = match self.rows[row].hill {
+            Hill::Down => std::cmp::max(dist, 5),
+            _ => dist,
+        };
+        println!("2-dist = {}", dist);
+        //up hill
+        let mut first_up = None;
+        for i in 0..dist {
+            let p = i + row;
+            if p > self.rows.len() {
+                break;
+            }
+            if let Hill::Up = self.rows[row + i].hill {
+                first_up = Some(i);
+                break;
+            }
+        }
+        println!("First_up:{:?}", first_up);
+        let dist = match first_up {
+            Some(a) if a <= 5 => std::cmp::min(5, dist),
+            Some(a) => a - 1,
+            None => dist,
+        };
+        println!("3-dist = {}", dist);
+        //empty space
+        for i in 0..dist {
+            let r = row + dist - i;
+            for c in 0..2 {
+                if let None = self.rows[r].riders[c] {
+                    return (r, c);
+                }
+            }
+        }
+        return (row, 0);
+    }
+
     pub fn move_riders(&mut self, v: Vec<(usize, usize)>) {
-        //TODO handle hill
         for i in (0..self.rows.len()).rev() {
-            for rd in &mut self.rows[i].clone().riders {
-                if let Some(rd) = rd.take() {
+            for j in 0..2 {
+                if let Some(rd) = self.rows[i].riders[j].clone() {
                     //get distance
                     let dist = match v.get(rd.team as usize) {
                         Some((ds, dr)) => match rd.tp {
@@ -73,10 +111,12 @@ impl Track {
                         },
                         None => 0,
                     };
+                    let (nr, nc) = self.calc_new_pos(i, dist);
+                    println!("Moving - {},{} to {},{}", i, j, nr, nc);
+                    self.rows[nr].riders[nc] = Some(rd);
+                    self.rows[i].riders[j] = None;
                 }
             }
-
-            println!("{}", i);
         }
     }
 

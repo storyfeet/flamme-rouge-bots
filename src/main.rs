@@ -11,7 +11,10 @@ fn main() {
     let mut tk = Track::from_rd(vec![(Flat, 5), (Up, 3), (Flat, 20), (Down, 2), (Flat, 9)]);
 
     tk.add_riders(3);
-    tk.move_riders(Vec::new());
+    tk.print();
+
+    tk.move_riders(vec![(4,5),(6,7),(8,9)]);
+
     tk.print();
     
 }
