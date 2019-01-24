@@ -1,10 +1,11 @@
 use std::fmt;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Hill {
     Flat,
     Up,
     Down,
+    Finish,
 }
 
 #[derive(Copy, Clone)]
@@ -15,8 +16,8 @@ pub enum RiderType {
 
 #[derive(Copy, Clone)]
 pub struct Rider {
-    tp: RiderType,
-    team: u8,
+    pub tp: RiderType,
+    pub team: usize,
 }
 
 #[derive(Copy, Clone)]
@@ -26,7 +27,7 @@ pub struct TRow {
 }
 
 pub struct Track {
-    rows: Vec<TRow>,
+    pub rows: Vec<TRow>,
 }
 
 impl Track {
@@ -40,6 +41,12 @@ impl Track {
                 });
             }
         }
+        for _ in 0..9 {
+            rows.push(TRow {
+                hill: Hill::Finish,
+                riders: [None, None],
+            });
+        }
         Track { rows }
     }
 
@@ -50,11 +57,11 @@ impl Track {
         for i in 0..n {
             let r = self.rows.get_mut(i).unwrap();
             r.riders[0] = Some(Rider {
-                team: i as u8,
+                team: i ,
                 tp: RiderType::Sprinter,
             });
             r.riders[1] = Some(Rider {
-                team: i as u8,
+                team: i ,
                 tp: RiderType::Rouler,
             });
         }
@@ -62,12 +69,10 @@ impl Track {
 
     fn calc_new_pos(&self, row: usize, dist: usize) -> (usize, usize) {
         //down hill
-        println!("1-dist = {}", dist);
         let dist = match self.rows[row].hill {
             Hill::Down => std::cmp::max(dist, 5),
             _ => dist,
         };
-        println!("2-dist = {}", dist);
         //up hill
         let mut first_up = None;
         for i in 0..dist {
@@ -80,13 +85,11 @@ impl Track {
                 break;
             }
         }
-        println!("First_up:{:?}", first_up);
         let dist = match first_up {
             Some(a) if a <= 5 => std::cmp::min(5, dist),
             Some(a) => a - 1,
             None => dist,
         };
-        println!("3-dist = {}", dist);
         //empty space
         for i in 0..dist {
             let r = row + dist - i;
@@ -99,7 +102,39 @@ impl Track {
         return (row, 0);
     }
 
-    pub fn move_riders(&mut self, v: Vec<(usize, usize)>) {
+    pub fn slipstream(&mut self){
+        let mut gap = 0;
+        let mut back = None;
+        for i in 0 .. self.rows.len(){
+            if self.rows[i].hill == Hill::Up{
+                back = None;
+                continue;
+            }
+            if let Some(_) = self.rows[i].riders[0]{
+                if gap == 1{
+                    if let Some(b) = back{
+                        for j in (b..i).rev(){
+                            self.rows[j].riders = self.rows[j-1].riders;
+                        }
+                        self.rows[b].riders = [None,None];
+                    }
+                    //slide forward
+                }
+                if back == None{
+                    back = Some(i);
+                }
+                gap = 0;
+                continue;
+            }
+            gap +=1;
+            if gap > 1 {
+                back = None
+            }
+        }
+        
+    }
+
+    pub fn move_riders(&mut self, v: &[(usize, usize)]) {
         for i in (0..self.rows.len()).rev() {
             for j in 0..2 {
                 if let Some(rd) = self.rows[i].riders[j].clone() {
@@ -112,7 +147,6 @@ impl Track {
                         None => 0,
                     };
                     let (nr, nc) = self.calc_new_pos(i, dist);
-                    println!("Moving - {},{} to {},{}", i, j, nr, nc);
                     self.rows[nr].riders[nc] = Some(rd);
                     self.rows[i].riders[j] = None;
                 }
@@ -120,23 +154,60 @@ impl Track {
         }
     }
 
+    pub fn exhaust(&self)->Vec<Rider>{
+        let mut res = Vec::new();
+        let mut last = None;
+        for row in &self.rows{
+            match row.riders[0] {
+                Some(_)=>{
+                    last = Some(row.riders);
+                }
+                None=>{
+                    if let Some(r) = last{
+                        if let Some(v) = r[0]{
+                            res.push(v);
+                        }
+                        if let Some(v) = r[1]{
+                            res.push(v);
+                        }
+                    }
+                    last = None;
+                }
+            }
+
+        }
+        res
+    }
+
+    pub fn winners(&self) -> Vec<Rider> {
+        let mut res = Vec::new();
+        for r in self.rows.iter().filter(|r| r.hill == Hill::Finish) {
+            for i in (0..2).rev() {
+                if let Some(rd) = r.riders[i] {
+                    res.push(rd);
+                }
+            }
+        }
+        res
+    }
+
     pub fn print(&self) {
         let v = &self.rows;
-        println!("Track");
 
-        for i in 0..(v.len() / 12) + 1 {
+        for i in 0..(v.len() / 16) + 1 {
             println!("");
             let mut lfstr = "".to_string();
             let mut rtstr = " ".to_string();
-            for h in 0..12 {
-                if let Some(TRow { hill, riders }) = v.get(i * 12 + h) {
+            for h in 0..16 {
+                if let Some(TRow { hill, riders }) = v.get(i * 16 + h) {
                     let c = match hill {
-                        Hill::Flat => '_',
-                        Hill::Up => '/',
-                        Hill::Down => '\\',
+                        Hill::Flat => "_",
+                        Hill::Up => "/",
+                        Hill::Down => "\\",
+                        Hill::Finish => "-F-",
                     };
-                    lfstr.push(c);
-                    rtstr.push(c);
+                    lfstr.push_str(c);
+                    rtstr.push_str(c);
                     lfstr.push_str(&t_rider_str(riders[1]));
                     rtstr.push_str(&t_rider_str(riders[0]));
                 }
