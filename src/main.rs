@@ -1,8 +1,8 @@
 mod track;
-use crate::track::{Hill, Track,Rider,RiderType};
+use crate::track::{Hill, Rider, RiderType, Track};
 
 mod strategy;
-use crate::strategy::{NonStrategy,HighestStrategy, Strategy};
+use crate::strategy::{HighestStrategy, NonStrategy,BreakerStrategy, Strategy};
 
 use card_deck::Deck;
 
@@ -14,13 +14,14 @@ fn sprinter_cards() -> Deck<usize> {
     Deck::new(vec![2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 9, 9, 9])
 }
 
-fn run_race(tk: &mut Track, ss: &mut Vec<Box<Strategy>>)->Vec<Rider> {
+fn run_race(tk: &mut Track, ss: &mut Vec<Box<Strategy>>) -> Vec<Rider> {
     tk.add_riders(ss.len());
-    print!("{}[2J", 27 as char);
+    print!("{}[2J{}Start", 27 as char, termion::cursor::Goto(1, 1));
     tk.print();
 
     let mut decks = Vec::new();
-    for _ in ss.iter() {
+    for (tm,r) in ss.iter_mut().enumerate() {
+        r.set_team(tm);
         decks.push((sprinter_cards(), rouler_cards()));
     }
 
@@ -46,26 +47,28 @@ fn run_race(tk: &mut Track, ss: &mut Vec<Box<Strategy>>)->Vec<Rider> {
         tk.move_riders(&moves);
 
         std::thread::sleep(std::time::Duration::from_millis(1500));
-        print!("{}[2JTrack", 27 as char);
+        print!("{}[2J{}Move", 27 as char, termion::cursor::Goto(1, 1));
         tk.print();
+        println!("{:?}", moves);
 
         tk.slipstream();
         let ex = tk.exhaust();
 
-        for rd in &ex{
+        for rd in &ex {
             match rd.tp {
-                RiderType::Sprinter=>{decks[rd.team].0.put_discard(2)}
-                RiderType::Rouler=>{decks[rd.team].1.put_discard(2)}
+                RiderType::Sprinter => decks[rd.team].0.put_discard(2),
+                RiderType::Rouler => decks[rd.team].1.put_discard(2),
             }
         }
 
         std::thread::sleep(std::time::Duration::from_millis(1500));
-        print!("{}[2JSlip", 27 as char);
+        print!("{}[2J{}Slip", 27 as char, termion::cursor::Goto(1, 1));
         tk.print();
-        println!("Exhaust:{:?}",ex);
+        println!("{:?}", moves);
+        println!("Exhaust:{:?}", ex);
 
         let wn = tk.winners();
-        if wn.len() > 0{
+        if wn.len() > 0 {
             return wn;
         }
     }
@@ -77,17 +80,17 @@ fn main() {
 
     use self::Hill::*;
     let mut tk = Track::from_rd(vec![(Flat, 5), (Up, 3), (Flat, 20), (Down, 2), (Flat, 9)]);
+    //let mut tk = Track::from_rd(vec![(Flat, 80)]);
 
     let winners = run_race(
         &mut tk,
         &mut vec![
+            Box::new(BreakerStrategy {team:0}),
             Box::new(HighestStrategy {}),
-            Box::new(NonStrategy {}),
             Box::new(NonStrategy {}),
             Box::new(NonStrategy {}),
         ],
     );
 
-    println!("Winners : {:?}",winners);
-
+    println!("Winners : {:?}", winners);
 }
