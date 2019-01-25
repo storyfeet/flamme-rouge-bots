@@ -11,10 +11,17 @@ pub fn sprinter_cards() -> Deck<usize> {
     Deck::new(vec![2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 9, 9, 9])
 }
 
-pub fn run_race(tk: &mut Track, ss: &mut Vec<Box<Strategy>>) -> Vec<Rider> {
+pub fn run_race(
+    tk: &mut Track,
+    ss: &mut Vec<Box<Strategy>>,
+    sleep: u64,
+    print: bool,
+) -> Vec<Rider> {
     tk.add_riders(ss.len());
-    print!("{}[2J{}Start", 27 as char, termion::cursor::Goto(1, 1));
-    tk.print();
+    if print {
+        print!("{}[2J{}Start", 27 as char, termion::cursor::Goto(1, 1));
+        tk.print();
+    }
 
     let mut decks = Vec::new();
     for _ in ss.iter() {
@@ -29,6 +36,14 @@ pub fn run_race(tk: &mut Track, ss: &mut Vec<Box<Strategy>>) -> Vec<Rider> {
         for (k, v) in ss.iter_mut().enumerate() {
             let mut sp_d: Vec<usize> = decks[k].0.draw(4).collect();
             let mut rl_d: Vec<usize> = decks[k].1.draw(4).collect();
+
+            if sp_d.len() == 0 {
+                sp_d.push(2);
+            }
+            if rl_d.len() == 0 {
+                rl_d.push(2);
+            }
+
             let sp_i = v.select(Rider::sprinter(k), &sp_d, tk);
             let rl_i = v.select(Rider::rouler(k), &rl_d, tk);
 
@@ -43,10 +58,12 @@ pub fn run_race(tk: &mut Track, ss: &mut Vec<Box<Strategy>>) -> Vec<Rider> {
 
         tk.move_riders(&moves);
 
-        std::thread::sleep(std::time::Duration::from_millis(1500));
-        print!("{}[2J{}Move", 27 as char, termion::cursor::Goto(1, 1));
-        tk.print();
-        println!("{:?}", moves);
+        std::thread::sleep(std::time::Duration::from_millis(sleep));
+        if print {
+            print!("{}[2J{}Move", 27 as char, termion::cursor::Goto(1, 1));
+            tk.print();
+            println!("{:?}", moves);
+        }
 
         tk.slipstream();
         let ex = tk.exhaust();
@@ -58,11 +75,13 @@ pub fn run_race(tk: &mut Track, ss: &mut Vec<Box<Strategy>>) -> Vec<Rider> {
             }
         }
 
-        std::thread::sleep(std::time::Duration::from_millis(1500));
-        print!("{}[2J{}Slip", 27 as char, termion::cursor::Goto(1, 1));
-        tk.print();
-        println!("{:?}", moves);
-        println!("Exhaust:{:?}", ex);
+        std::thread::sleep(std::time::Duration::from_millis(sleep));
+        if print {
+            print!("{}[2J{}Slip", 27 as char, termion::cursor::Goto(1, 1));
+            tk.print();
+            println!("{:?}", moves);
+            println!("Exhaust:{:?}", ex);
+        }
 
         let wn = tk.winners();
         if wn.len() > 0 {

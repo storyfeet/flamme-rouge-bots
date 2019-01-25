@@ -9,13 +9,13 @@ pub enum Hill {
     Finish,
 }
 
-#[derive(Copy, Clone,PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RiderType {
     Sprinter,
     Rouler,
 }
 
-#[derive(Copy, Clone,PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Rider {
     pub tp: RiderType,
     pub team: usize,
@@ -68,11 +68,11 @@ impl Track {
         }
     }
 
-    pub fn dist_to_hill(&self,r:Rider,htype:Hill)->Option<usize>{
+    pub fn dist_to_hill(&self, r: Rider, htype: Hill) -> Option<usize> {
         let mut dist = None;
-        for row in &self.rows{
-            for n in 0..2{
-                if row.riders[n] == Some(r){
+        for row in &self.rows {
+            for n in 0..2 {
+                if row.riders[n] == Some(r) {
                     dist = Some(0);
                 }
             }
@@ -81,11 +81,8 @@ impl Track {
                     return Some(d);
                 }
 
-
-                dist = Some(d+1);
+                dist = Some(d + 1);
             }
-
-             
         }
         None
     }
@@ -100,7 +97,7 @@ impl Track {
         let mut first_up = None;
         for i in 0..dist {
             let p = i + row;
-            if p > self.rows.len() {
+            if p >= self.rows.len() {
                 break;
             }
             if let Hill::Up = self.rows[row + i].hill {
@@ -222,10 +219,10 @@ impl Track {
             for h in 0..16 {
                 if let Some(TRow { hill, riders }) = v.get(i * 16 + h) {
                     let c = match hill {
-                        Hill::Flat => format!("{}_",color::Bg(color::Reset)),
-                        Hill::Up => format!("{}/",color::Bg(color::LightRed)),
-                        Hill::Down => format!("{}\\",color::Bg(color::LightBlue)),
-                        Hill::Finish => format!("{}^",color::Bg(color::Reset)),
+                        Hill::Flat => format!("{}_", color::Bg(color::Reset)),
+                        Hill::Up => format!("{}/", color::Bg(color::LightRed)),
+                        Hill::Down => format!("{}\\", color::Bg(color::LightBlue)),
+                        Hill::Finish => format!("{}^", color::Bg(color::Reset)),
                     };
                     lfstr.push_str(&c);
                     rtstr.push_str(&c);
@@ -254,11 +251,17 @@ pub fn team_color(v: usize) -> String {
 }
 
 impl Rider {
-    pub fn rouler(team:usize)->Rider{
-        Rider{team,tp:RiderType::Rouler}
+    pub fn rouler(team: usize) -> Rider {
+        Rider {
+            team,
+            tp: RiderType::Rouler,
+        }
     }
-    pub fn sprinter(team:usize)->Rider{
-        Rider{team,tp:RiderType::Sprinter}
+    pub fn sprinter(team: usize) -> Rider {
+        Rider {
+            team,
+            tp: RiderType::Sprinter,
+        }
     }
     pub fn term_color(&self) -> String {
         team_color(self.team)
