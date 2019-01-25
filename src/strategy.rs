@@ -2,43 +2,27 @@ use crate::track::{Hill, Rider, Track};
 
 pub trait Strategy {
     //return the index, not the value of the chosen card
-    fn rouler(&mut self, cards: &[usize], track: &Track) -> usize;
+    fn select(&mut self, r: Rider, cards: &[usize], track: &Track) -> usize;
 
-    //return the index, not the value of the chosen card
-    fn sprinter(&mut self, cards: &[usize], track: &Track) -> usize;
     fn strat_name(&self) -> &'static str;
-    fn set_team(&mut self, _: usize) {}
 }
 
-pub struct NonStrategy {}
+pub struct RandomStrat {}
 
-impl Strategy for NonStrategy {
-    fn rouler(&mut self, _: &[usize], _: &Track) -> usize {
-        0
-    }
-
-    //return the index, not the value of the chosen card
-    fn sprinter(&mut self, _: &[usize], _: &Track) -> usize {
+impl Strategy for RandomStrat {
+    fn select(&mut self, r: Rider, _: &[usize], _: &Track) -> usize {
         0
     }
 
     fn strat_name(&self) -> &'static str {
-        "Non Strat"
+        "Random"
     }
 }
 
-pub struct HighestStrategy {}
+pub struct HighestStrat {}
 
-impl Strategy for HighestStrategy {
-    fn rouler(&mut self, cards: &[usize], _: &Track) -> usize {
-        match cards.iter().enumerate().max_by_key(|(_, v)| *v) {
-            Some((res, _)) => res,
-            _ => 0,
-        }
-    }
-
-    //return the index, not the value of the chosen card
-    fn sprinter(&mut self, cards: &[usize], _: &Track) -> usize {
+impl Strategy for HighestStrat {
+    fn select(&mut self, _: Rider, cards: &[usize], _: &Track) -> usize {
         match cards.iter().enumerate().max_by_key(|(_, v)| *v) {
             Some((res, _)) => res,
             _ => 0,
@@ -46,13 +30,11 @@ impl Strategy for HighestStrategy {
     }
 
     fn strat_name(&self) -> &'static str {
-        "Non Strat"
+        "Highest"
     }
 }
 
-pub struct BreakerStrategy {
-    pub team: usize,
-}
+pub struct BreakerStrat {}
 
 fn breaker_strat(r: Rider, cards: &[usize], track: &Track) -> usize {
     let d = track
@@ -67,21 +49,13 @@ fn breaker_strat(r: Rider, cards: &[usize], track: &Track) -> usize {
     0
 }
 
-impl Strategy for BreakerStrategy {
-    fn set_team(&mut self, t: usize) {
-        self.team = t;
-    }
+impl Strategy for BreakerStrat {
     //return the index, not the value of the chosen card
-    fn rouler(&mut self, cards: &[usize], track: &Track) -> usize {
-        let r = Rider::rouler(self.team);
+    fn select(&mut self, r: Rider, cards: &[usize], track: &Track) -> usize {
         breaker_strat(r, cards, track)
     }
 
     //return the index, not the value of the chosen card
-    fn sprinter(&mut self, cards: &[usize], track: &Track) -> usize {
-        let r = Rider::sprinter(self.team);
-        breaker_strat(r, cards, track)
-    }
     fn strat_name(&self) -> &'static str {
         "Breaker"
     }
