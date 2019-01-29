@@ -63,6 +63,9 @@ pub fn run_race(
             print!("{}[2J{}Move", 27 as char, termion::cursor::Goto(1, 1));
             tk.print();
             println!("{:?}", moves);
+            for s in ss.iter() {
+                println!(",{}", s.strat_name());
+            }
         }
 
         tk.slipstream();
@@ -80,6 +83,9 @@ pub fn run_race(
             print!("{}[2J{}Slip", 27 as char, termion::cursor::Goto(1, 1));
             tk.print();
             println!("{:?}", moves);
+            for s in ss.iter() {
+                println!(",{}", s.strat_name());
+            }
             println!("Exhaust:{:?}", ex);
         }
 

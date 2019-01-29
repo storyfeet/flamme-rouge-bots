@@ -68,6 +68,29 @@ impl Track {
         }
     }
 
+    pub fn rider_on(&self, r: Rider) -> (usize, Hill) {
+        for (d, h) in self.rows.iter().enumerate() {
+            for i in 0..2 {
+                if h.riders[i] == Some(r) {
+                    return (d, h.hill);
+                }
+            }
+        }
+        (0, Hill::Flat)
+    }
+
+    ///returns dist from rider to next, and then what's Next
+    pub fn rider_next(&self, r: Rider) -> (usize, Hill) {
+        let (d_on, h_on) = self.rider_on(r);
+
+        for (d, h) in self.rows[d_on..].iter().enumerate() {
+            if h.hill != h_on {
+                return (d, h.hill);
+            }
+        }
+        (0, Hill::Flat)
+    }
+
     pub fn dist_to_hill(&self, r: Rider, htype: Hill) -> Option<usize> {
         let mut dist = None;
         for row in &self.rows {
